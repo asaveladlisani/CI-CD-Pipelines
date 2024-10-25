@@ -1,0 +1,75 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '8.0'
+
+      - name: Restore Dependencies
+        run: dotnet restore
+
+      - name: Build the Application
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Publish the Application
+        run: dotnet publish --configuration Release --output ./publish
+
+      - name: Copy index.html to Publish Directory
+        run: cp ./src/index.html ./publish/index.html
+
+      - name: Archive Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-artifacts
+          path: ./publish
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '7.0'
+
+      - name: Restore Dependencies
+        run: dotnet restore
+
+      - name: Run Unit Tests
+        run: dotnet test --configuration Release --no-build
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Deploy to Staging
+        run: |
+          echo "Deploying to staging environment..."
+          # Replace with your deployment commands
+          # Example: scp -r ./publish/* user@your-server:/path/to/app
+          # Ensure index.html is included in the deployment
+
+      - name: Notify Team
+        if: failure()  # Only runs if the deployment fails
+        uses: peter-evans/slack-send@v1
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          text: "🚨 Deployment to staging failed! Please check the logs."
