@@ -30,7 +30,7 @@ jobs:
         run: cp ./src/index.html ./publish/index.html
 
       - name: Archive Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
           path: ./publish
